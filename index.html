@@ -69,6 +69,146 @@
           </p>
         </details>
       </section>
+
+      <section class="scoring">
+        <div class="scoring-header">
+          <h2>Scoring</h2>
+          <label class="score-toggle">
+            <input type="checkbox" id="show-score" checked>
+            <span>Show calculated score</span>
+          </label>
+        </div>
+
+        <div class="score-rules" id="score-rules">
+          <div class="score-rule-row" data-rule-id="baseWin">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Base Win</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="5" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="noFlowers">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">No flowers</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="1" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="goodFlower">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Good flower</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt each</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="badFlower">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Bad flower</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="1" min="0" step="1">
+              <span class="score-rule-unit">pt each</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="roundWind">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Matching Round Wind</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt each tile</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="playerWind">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Matching Player Wind</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt each tile</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="otherWind">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Other Wind</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="1" min="0" step="1">
+              <span class="score-rule-unit">pt each tile</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="dragon">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Red/Green/White Dragon</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt each tile</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="allSequences">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">All melds are sequences</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="3" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="allSequencesNoFlowers">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">All melds are sequences, no flowers</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="10" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="score-display" id="score-display">
+          <div class="score-total">
+            Total Score:
+            <span id="score-total-value">0</span>
+          </div>
+          <div class="score-breakdown" id="score-breakdown"></div>
+        </div>
+      </section>
     </section>
   </main>
 

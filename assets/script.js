@@ -45,6 +45,83 @@
   // we just mark each as a red or blue flower and add them randomly.
   const flowerColors = ["Red", "Blue"];
 
+  const dragonKeys = ["dragon-red", "dragon-green", "dragon-white"];
+
+  const windKeyByName = {
+    East: "wind-east",
+    South: "wind-south",
+    West: "wind-west",
+    North: "wind-north"
+  };
+
+  const scoringRules = [
+    {
+      id: "baseWin",
+      label: "Base Win",
+      defaultPoints: 5,
+      evaluator: (ctx) => 1
+    },
+    {
+      id: "noFlowers",
+      label: "No flowers",
+      defaultPoints: 1,
+      evaluator: (ctx) => (ctx.flowers.length === 0 ? 1 : 0)
+    },
+    {
+      id: "goodFlower",
+      label: "Good flower",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.goodFlowerCount
+    },
+    {
+      id: "badFlower",
+      label: "Bad flower",
+      defaultPoints: 1,
+      evaluator: (ctx) => ctx.badFlowerCount
+    },
+    {
+      id: "roundWind",
+      label: "Matching Round Wind",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.roundWindTileCount
+    },
+    {
+      id: "playerWind",
+      label: "Matching Player Wind",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.playerWindTileCount
+    },
+    {
+      id: "otherWind",
+      label: "Other Wind",
+      defaultPoints: 1,
+      evaluator: (ctx) => ctx.otherWindTileCount
+    },
+    {
+      id: "dragon",
+      label: "Red/Green/White Dragon",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.dragonTileCount
+    },
+    {
+      id: "allSequences",
+      label: "All melds are sequences",
+      defaultPoints: 3,
+      evaluator: (ctx) => (ctx.allMeldsSequences ? 1 : 0)
+    },
+    {
+      id: "allSequencesNoFlowers",
+      label: "All melds are sequences, no flowers",
+      defaultPoints: 10,
+      evaluator: (ctx) =>
+        ctx.allMeldsSequences && ctx.flowers.length === 0 ? 1 : 0
+    }
+  ];
+
+  let currentRoundWind = null;
+  let currentPlayerWind = null;
+  let currentHand = null;
+
   // --- Utility functions ---------------------------------------------------
 
   function cloneCounts(counts) {
@@ -195,6 +272,116 @@
     return null;
   }
 
+  // --- Scoring helpers -----------------------------------------------------
+
+  function flattenHandTiles(hand) {
+    if (!hand) return [];
+    const tiles = [];
+    hand.melds.forEach((meld) => tiles.push(...meld.tiles));
+    tiles.push(...hand.pair);
+    return tiles;
+  }
+
+  function buildScoreContext(hand) {
+    const tiles = flattenHandTiles(hand);
+    const tileCounts = {};
+    tiles.forEach((t) => {
+      tileCounts[t.key] = (tileCounts[t.key] || 0) + 1;
+    });
+
+    const roundWindKey = currentRoundWind ? windKeyByName[currentRoundWind] : null;
+    const playerWindKey = currentPlayerWind ? windKeyByName[currentPlayerWind] : null;
+
+    const roundWindTileCount = roundWindKey ? (tileCounts[roundWindKey] || 0) : 0;
+    const playerWindTileCount = playerWindKey ? (tileCounts[playerWindKey] || 0) : 0;
+
+    let otherWindTileCount = 0;
+    Object.keys(windKeyByName).forEach((name) => {
+      const key = windKeyByName[name];
+      if (key === roundWindKey || key === playerWindKey) return;
+      otherWindTileCount += tileCounts[key] || 0;
+    });
+
+    let dragonTileCount = 0;
+    dragonKeys.forEach((key) => {
+      dragonTileCount += tileCounts[key] || 0;
+    });
+
+    const flowers = hand.flowers || [];
+
+    const goodFlowerNumbersBySeat = {
+      East: 1,
+      South: 2,
+      West: 3,
+      North: 4
+    };
+    const goodFlowerNumber =
+      currentPlayerWind && goodFlowerNumbersBySeat[currentPlayerWind]
+        ? goodFlowerNumbersBySeat[currentPlayerWind]
+        : null;
+
+    let goodFlowerCount = 0;
+    let badFlowerCount = 0;
+    flowers.forEach((f) => {
+      if (goodFlowerNumber != null && f.number === goodFlowerNumber) {
+        goodFlowerCount += 1;
+      } else {
+        badFlowerCount += 1;
+      }
+    });
+
+    const allMeldsSequences = hand.melds.every((m) => m.type === "chow");
+
+    return {
+      tiles,
+      tileCounts,
+      flowers,
+      goodFlowerCount,
+      badFlowerCount,
+      roundWindTileCount,
+      playerWindTileCount,
+      otherWindTileCount,
+      dragonTileCount,
+      allMeldsSequences
+    };
+  }
+
+  function evaluateScoringRules(hand, configById) {
+    if (!hand) {
+      return { total: 0, breakdown: [] };
+    }
+
+    const ctx = buildScoreContext(hand);
+    let total = 0;
+    const breakdown = [];
+
+    scoringRules.forEach((rule) => {
+      const cfg = configById && configById[rule.id];
+      const enabled = cfg ? !!cfg.enabled : true;
+      const value =
+        cfg && typeof cfg.value === "number" && !Number.isNaN(cfg.value)
+          ? cfg.value
+          : rule.defaultPoints;
+
+      if (!enabled || value === 0) return;
+
+      const count = rule.evaluator(ctx);
+      if (!count) return;
+
+      const points = count * value;
+      total += points;
+      breakdown.push({
+        id: rule.id,
+        label: rule.label,
+        count,
+        value,
+        points
+      });
+    });
+
+    return { total, breakdown };
+  }
+
   // --- Rendering -----------------------------------------------------------
 
   function createTileElement(tile) {
@@ -319,6 +506,11 @@
     const roundWindEl = document.getElementById("round-wind");
     const playerWindEl = document.getElementById("player-wind");
 
+    const showScoreCheckbox = document.getElementById("show-score");
+    const scoreDisplay = document.getElementById("score-display");
+    const scoreTotalValue = document.getElementById("score-total-value");
+    const scoreBreakdownEl = document.getElementById("score-breakdown");
+
     if (!generateBtn || !handOutput || !flowersOutput) {
       console.warn("Mahjong generator: required elements not found.");
       return;
@@ -331,11 +523,67 @@
     }
 
     function updateWinds() {
+      const newRound = randomWind();
+      const newSeat = randomWind();
+      currentRoundWind = newRound;
+      currentPlayerWind = newSeat;
+
       if (roundWindEl) {
-        roundWindEl.textContent = randomWind() + " Round";
+        roundWindEl.textContent = newRound + " Round";
       }
       if (playerWindEl) {
-        playerWindEl.textContent = randomWind() + " Seat";
+        playerWindEl.textContent = newSeat + " Seat";
+      }
+    }
+
+    function getScoreConfigFromDOM() {
+      const config = {};
+      const rows = document.querySelectorAll("[data-rule-id]");
+      rows.forEach((row) => {
+        const ruleId = row.getAttribute("data-rule-id");
+        if (!ruleId) return;
+        const checkbox = row.querySelector("input[type='checkbox']");
+        const valueInput = row.querySelector("input[type='number']");
+        const enabled = checkbox ? checkbox.checked : true;
+        const value = valueInput ? parseFloat(valueInput.value) : Number.NaN;
+        config[ruleId] = {
+          enabled,
+          value: Number.isNaN(value) ? undefined : value
+        };
+      });
+      return config;
+    }
+
+    function updateScoreDisplay() {
+      if (!scoreDisplay || !currentHand) {
+        if (scoreDisplay) {
+          scoreDisplay.classList.add("score-display-hidden");
+        }
+        return;
+      }
+
+      if (showScoreCheckbox && !showScoreCheckbox.checked) {
+        scoreDisplay.classList.add("score-display-hidden");
+        return;
+      }
+
+      scoreDisplay.classList.remove("score-display-hidden");
+
+      const config = getScoreConfigFromDOM();
+      const result = evaluateScoringRules(currentHand, config);
+
+      if (scoreTotalValue) {
+        scoreTotalValue.textContent = String(result.total);
+      }
+
+      if (scoreBreakdownEl) {
+        scoreBreakdownEl.innerHTML = "";
+        result.breakdown.forEach((item) => {
+          const row = document.createElement("div");
+          row.className = "score-breakdown-row";
+          row.textContent = `${item.label}: ${item.points} (${item.count} × ${item.value})`;
+          scoreBreakdownEl.appendChild(row);
+        });
       }
     }
 
@@ -343,14 +591,34 @@
       const hand = generateWinningHand();
       const groupMelds = !!groupMeldsCheckbox?.checked;
 
+      currentHand = hand || null;
+      updateWinds();
+
       renderHand(handOutput, hand, groupMelds);
       renderFlowers(flowersOutput, hand ? hand.flowers : []);
-      updateWinds();
+      updateScoreDisplay();
     }
 
     generateBtn.addEventListener("click", generateAndRender);
 
-    // Optionally, generate an initial hand on load
+    if (showScoreCheckbox && scoreDisplay) {
+      showScoreCheckbox.addEventListener("change", updateScoreDisplay);
+    }
+
+    const scoreRuleRows = document.querySelectorAll("[data-rule-id]");
+    scoreRuleRows.forEach((row) => {
+      const cb = row.querySelector("input[type='checkbox']");
+      const valueInput = row.querySelector("input[type='number']");
+      if (cb) {
+        cb.addEventListener("change", updateScoreDisplay);
+      }
+      if (valueInput) {
+        valueInput.addEventListener("change", updateScoreDisplay);
+        valueInput.addEventListener("input", updateScoreDisplay);
+      }
+    });
+
+    // Initial render
     generateAndRender();
   });
 })();
