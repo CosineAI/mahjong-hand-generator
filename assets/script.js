@@ -86,25 +86,25 @@
       id: "roundWind",
       label: "Matching Round Wind",
       defaultPoints: 2,
-      evaluator: (ctx) => ctx.roundWindTileCount
+      evaluator: (ctx) => ctx.roundWindTripletCount
     },
     {
       id: "playerWind",
       label: "Matching Player Wind",
       defaultPoints: 2,
-      evaluator: (ctx) => ctx.playerWindTileCount
+      evaluator: (ctx) => ctx.playerWindTripletCount
     },
     {
       id: "otherWind",
       label: "Other Wind",
       defaultPoints: 1,
-      evaluator: (ctx) => ctx.otherWindTileCount
+      evaluator: (ctx) => ctx.otherWindTripletCount
     },
     {
       id: "dragon",
       label: "Red/Green/White Dragon",
       defaultPoints: 2,
-      evaluator: (ctx) => ctx.dragonTileCount
+      evaluator: (ctx) => ctx.dragonTripletCount
     },
     {
       id: "allSequences",
@@ -420,14 +420,14 @@
     const roundWindTileCount = roundWindKey ? (tileCounts[roundWindKey] || 0) : 0;
     const playerWindTileCount = playerWindKey ? (tileCounts[playerWindKey] || 0) : 0;
 
+    const windTileKeys = Object.values(windKeyByName);
+
     let otherWindTileCount = 0;
-    Object.keys(windKeyByName).forEach((name) => {
-      const key = windKeyByName[name];
+    windTileKeys.forEach((key) => {
       if (key === roundWindKey || key === playerWindKey) return;
       otherWindTileCount += tileCounts[key] || 0;
     });
 
-    const windTileKeys = Object.values(windKeyByName);
     let totalWindTileCount = 0;
     windTileKeys.forEach((key) => {
       totalWindTileCount += tileCounts[key] || 0;
@@ -437,6 +437,12 @@
     dragonKeys.forEach((key) => {
       dragonTileCount += tileCounts[key] || 0;
     });
+
+    // Triplet-based counts for winds and dragons
+    let roundWindTripletCount = 0;
+    let playerWindTripletCount = 0;
+    let otherWindTripletCount = 0;
+    let dragonTripletCount = 0;
 
     const flowers = hand.flowers || [];
 
@@ -480,6 +486,28 @@
       if (!meld || !Array.isArray(meld.tiles) || meld.tiles.length === 0) return;
 
       const firstTile = meld.tiles[0];
+
+      // Triplet-based wind/dragon scoring
+      if (meld.type === "pung") {
+        const tileKey = firstTile.key;
+        if (roundWindKey && tileKey === roundWindKey) {
+          roundWindTripletCount += 1;
+        }
+        if (playerWindKey && tileKey === playerWindKey) {
+          playerWindTripletCount += 1;
+        }
+        if (
+          windTileKeys.includes(tileKey) &&
+          tileKey !== roundWindKey &&
+          tileKey !== playerWindKey
+        ) {
+          otherWindTripletCount += 1;
+        }
+        if (dragonKeys.includes(tileKey)) {
+          dragonTripletCount += 1;
+        }
+      }
+
       const suit = firstTile.suit;
       const isSuited = !!suit && typeof firstTile.rank === "number";
 
@@ -677,6 +705,10 @@
       otherWindTileCount,
       totalWindTileCount,
       dragonTileCount,
+      roundWindTripletCount,
+      playerWindTripletCount,
+      otherWindTripletCount,
+      dragonTripletCount,
       allMeldsSequences,
       count123and789SameSuit,
       count111and999SameSuit,
