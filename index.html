@@ -3,16 +3,68 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My Static Site</title>
+  <title>Taiwanese Mahjong Winning Hand Generator</title>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
+  <header>
+    <h1>Taiwanese Mahjong Winning Hand Generator</h1>
+    <p class="tagline">Generate random 16-tile winning hands with bonus flowers</p>
+  </header>
+
   <main>
-    <h1>Welcome to Your Static Site</h1>
+    <section class="app">
+      <p class="intro">
+        This tool creates a random Taiwanese-style winning hand:
+        <strong>5 melds + 1 pair</strong> (17 tiles shown, assuming the final winning tile is just drawn),
+        plus a random selection of <strong>flower and season tiles</strong>.
+      </p>
+
+      <div class="controls">
+        <button id="generate-btn">Generate Winning Hand</button>
+        <label class="checkbox">
+          <input type="checkbox" id="group-melds" checked>
+          <span>Group tiles by meld</span>
+        </label>
+      </div>
+
+      <section class="results">
+        <div class="hand-section">
+          <h2>Winning Hand</h2>
+          <div id="hand-output" class="hand-output empty">
+            <p class="placeholder">Click “Generate Winning Hand” to see a random hand.</p>
+          </div>
+        </div>
+
+        <div class="flowers-section">
+          <h2>Flowers &amp; Seasons</h2>
+          <div id="flowers-output" class="flowers-output empty">
+            <p class="placeholder">Flowers and seasons will appear here.</p>
+          </div>
+        </div>
+
+        <details class="explanation">
+          <summary>What exactly is being generated?</summary>
+          <p>
+            Taiwanese mahjong is played with <strong>16 tiles in hand</strong>. When you win, you effectively
+            have <strong>5 melds (sets of 3 tiles) and 1 pair</strong>, plus the just-drawn winning tile.
+            For clarity, this generator shows all <strong>5 melds + 1 pair</strong> explicitly
+            (17 tiles total), grouped into sets.
+          </p>
+          <p>
+            Flowers and seasons are <strong>bonus tiles</strong>. They are not part of the 16-tile hand,
+            but they are revealed when drawn and score extra points. Here we just show a random selection
+            of distinct flower/season tiles alongside the hand.
+          </p>
+        </details>
+      </section>
+    </section>
   </main>
+
   <footer>
-    <p>&copy; 2025 Your Name</p>
+    <p>&copy; 2025 Taiwanese Mahjong Hand Generator</p>
   </footer>
+
   <script src="assets/script.js"></script>
 </body>
 </html>
