@@ -144,43 +144,43 @@
     },
     {
       id: "twoMeldsSameSuitNumbers",
-      label: "Two melds of same suit and numbers",
+      label: "Two sequence melds of same suit & numbers",
       defaultPoints: 3,
       evaluator: (ctx) => ctx.twoSameSuitNumbers
     },
     {
       id: "threeMeldsSameSuitNumbers",
-      label: "Three melds of same suit and numbers",
+      label: "Three sequence melds of same suit & numbers",
       defaultPoints: 15,
       evaluator: (ctx) => ctx.threeSameSuitNumbers
     },
     {
       id: "fourMeldsSameSuitNumbers",
-      label: "Four melds of same suit and numbers",
+      label: "Four sequence melds of same suit & numbers",
       defaultPoints: 30,
       evaluator: (ctx) => ctx.fourSameSuitNumbers
     },
     {
       id: "twoMeldsSameNumberDifferentSuits",
-      label: "Two melds of same numbers, different suits",
+      label: "Two sequence melds of same numbers, different suits",
       defaultPoints: 2,
       evaluator: (ctx) => ctx.twoSameNumberDifferentSuits
     },
     {
       id: "threeMeldsSameNumberDifferentSuits",
-      label: "Three melds of same numbers, different suits",
+      label: "Three sequence melds of same numbers, different suits",
       defaultPoints: 10,
       evaluator: (ctx) => ctx.threeSameNumberDifferentSuits
     },
     {
       id: "fourMeldsSameNumberAtLeastTwoSuits",
-      label: "Four melds of same numbers (≥2 suits)",
+      label: "Four sequence melds of same numbers (≥2 suits)",
       defaultPoints: 20,
       evaluator: (ctx) => ctx.fourSameNumberAtLeastTwoSuits
     },
     {
       id: "fiveMeldsSameNumberAtLeastTwoSuits",
-      label: "Five melds of same numbers (≥2 suits)",
+      label: "Five sequence melds of same numbers (≥2 suits)",
       defaultPoints: 40,
       evaluator: (ctx) => ctx.fiveSameNumberAtLeastTwoSuits
     },
@@ -207,6 +207,36 @@
       label: "Four closed triplets",
       defaultPoints: 30,
       evaluator: (ctx) => (ctx.closedTripletCount >= 4 ? 1 : 0)
+    },
+    {
+      id: "edgeWin",
+      label: "Edge win (1-2 wait 3 / 7-8 wait 7)",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.waitEdge
+    },
+    {
+      id: "holeWin",
+      label: "Hole win (inside wait)",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.waitHole
+    },
+    {
+      id: "pairWin",
+      label: "Pair win",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.waitPair
+    },
+    {
+      id: "falseEdgeWin",
+      label: "False edge win",
+      defaultPoints: 1,
+      evaluator: (ctx) => ctx.waitFalseEdge
+    },
+    {
+      id: "selfDrawn",
+      label: "Self-drawn",
+      defaultPoints: 1,
+      evaluator: (ctx) => (ctx.isSelfDrawn ? 1 : 0)
     }
   ];
 
@@ -215,6 +245,7 @@
   let currentHand = null;
   let currentWinType = null;
   let currentOpenMeldCount = 0;
+  let currentWinningTile = null;
 
   // --- Utility functions ---------------------------------------------------
 
@@ -486,7 +517,7 @@
         pungRanksBySuit[suit].add(ranks[0]);
       }
 
-      // For \"same suit & numbers\" and \"same numbers\" rules, only consider sequences (chows),
+      // For "same suit & numbers" and "same numbers" rules, only consider sequences (chows),
       // not triplets. Closed triplets are handled separately.
       let basePattern = null;
       if (meld.type === "chow") {
@@ -561,6 +592,78 @@
       }
     });
 
+    // Winning tile wait-type analysis
+    let waitEdge = 0;
+    let waitHole = 0;
+    let waitPair = 0;
+    let waitFalseEdge = 0;
+    const isSelfDrawn = currentWinType === WIN_TYPE_SELF_DRAWN;
+
+    const winningTile = currentWinningTile || null;
+    if (winningTile) {
+      const winningTileKey = winningTile.key;
+      const winningTileSuit =
+        typeof winningTile.suit === "string" ? winningTile.suit : null;
+      const winningTileRank =
+        typeof winningTile.rank === "number" ? winningTile.rank : null;
+
+      const pairKey = hand.pairType ? hand.pairType.key : null;
+      const pairCandidate =
+        winningTileKey && pairKey && winningTileKey === pairKey;
+
+      let potentialSequences = [];
+      let edgeCandidate = false;
+      let holeCandidate = false;
+
+      if (winningTileSuit && winningTileRank != null) {
+        const ranksInSuit = {};
+        tiles.forEach((t) => {
+          if (t.suit === winningTileSuit && typeof t.rank === "number") {
+            ranksInSuit[t.rank] = (ranksInSuit[t.rank] || 0) + 1;
+          }
+        });
+
+        for (let start = winningTileRank - 2; start <= winningTileRank; start++) {
+          const r1 = start;
+          const r2 = start + 1;
+          const r3 = start + 2;
+          if (r1 < 1 || r3 > 9) continue;
+          if (winningTileRank < r1 || winningTileRank > r3) continue;
+          if (
+            (ranksInSuit[r1] || 0) > 0 &&
+            (ranksInSuit[r2] || 0) > 0 &&
+            (ranksInSuit[r3] || 0) > 0
+          ) {
+            potentialSequences.push([r1, r2, r3]);
+          }
+        }
+
+        potentialSequences.forEach((seq) => {
+          const [a, b, c] = seq;
+          if (a === 1 && c === 3 && winningTileRank === 3) {
+            edgeCandidate = true;
+          } else if (a === 7 && c === 9 && winningTileRank === 7) {
+            edgeCandidate = true;
+          }
+          if (winningTileRank === b) {
+            holeCandidate = true;
+          }
+        });
+      }
+
+      const seqCount = potentialSequences.length;
+
+      if (pairCandidate && seqCount === 0) {
+        waitPair = 1;
+      } else if (edgeCandidate && seqCount === 1 && !pairCandidate) {
+        waitEdge = 1;
+      } else if (holeCandidate && seqCount === 1 && !pairCandidate) {
+        waitHole = 1;
+      } else if (pairCandidate || seqCount > 0) {
+        waitFalseEdge = 1;
+      }
+    }
+
     const allMeldsSequences = hand.melds.every((m) => m.type === "chow");
 
     return {
@@ -585,8 +688,14 @@
       fourSameNumberAtLeastTwoSuits,
       fiveSameNumberAtLeastTwoSuits,
       allClosedHand,
-      closedTripletCount
+      closedTripletCount,
+      waitEdge,
+      waitHole,
+      waitPair,
+      waitFalseEdge,
+      isSelfDrawn
     };
+  };
   }
 
   function evaluateScoringRules(hand, configById) {
@@ -706,6 +815,9 @@
       winningTile = closedTiles[idx];
       closedTiles.splice(idx, 1);
     }
+
+    // Persist winning tile for scoring context.
+    currentWinningTile = winningTile || null;
 
     if (winningTile && winningTileContainer) {
       winningTileContainer.appendChild(createTileElement(winningTile));
