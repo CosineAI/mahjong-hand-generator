@@ -727,7 +727,6 @@
       waitFalseEdge,
       isSelfDrawn
     };
-  };
   }
 
   function evaluateScoringRules(hand, configById) {
