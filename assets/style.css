@@ -319,6 +319,46 @@ main {
   gap: 0.6rem;
 }
 
+/* Winning tile */
+
+.winning-tile-section {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed rgba(148,163,184,0.7);
+}
+
+.winning-tile-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.winning-tile-label {
+  font-size: 0.85rem;
+  font-weight: 550;
+  color: #374151;
+}
+
+.win-type-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.winning-tile-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.winning-tile-slot {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+}
+
 .placeholder {
   margin: 0;
   font-size: 0.9rem;

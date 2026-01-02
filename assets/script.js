@@ -54,6 +54,9 @@
     North: "wind-north"
   };
 
+  const WIN_TYPE_SELF_DRAWN = "self-drawn";
+  const WIN_TYPE_DISCARD = "win";
+
   const scoringRules = [
     {
       id: "baseWin",
@@ -121,6 +124,7 @@
   let currentRoundWind = null;
   let currentPlayerWind = null;
   let currentHand = null;
+  let currentWinType = null;
 
   // --- Utility functions ---------------------------------------------------
 
@@ -406,9 +410,22 @@
     return el;
   }
 
-  function renderHand(container, handData, _groupMelds) {
+  function renderHand(container, handData, _groupMelds, options) {
     container.innerHTML = "";
     container.classList.remove("empty");
+
+    const winningTileContainer = document.getElementById("winning-tile");
+    const winTypeEl = document.getElementById("win-type");
+    const opts = options || {};
+    const winType = opts.winType || null;
+
+    if (winningTileContainer) {
+      winningTileContainer.innerHTML = "";
+    }
+    if (winTypeEl) {
+      winTypeEl.textContent = winType === WIN_TYPE_SELF_DRAWN ? "Self-drawn" :
+        winType === WIN_TYPE_DISCARD ? "Win" : "—";
+    }
 
     if (!handData) {
       container.classList.add("empty");
@@ -433,6 +450,18 @@
     const closedTiles = [];
     closedMelds.forEach((meld) => closedTiles.push(...meld.tiles));
     closedTiles.push(...handData.pair);
+
+    // Choose winning tile from the closed portion, and remove it from the closed display.
+    let winningTile = null;
+    if (closedTiles.length > 0) {
+      const idx = Math.floor(Math.random() * closedTiles.length);
+      winningTile = closedTiles[idx];
+      closedTiles.splice(idx, 1);
+    }
+
+    if (winningTile && winningTileContainer) {
+      winningTileContainer.appendChild(createTileElement(winningTile));
+    }
 
     const halvesContainer = document.createElement("div");
     halvesContainer.className = "hand-halves";
@@ -594,7 +623,11 @@
       currentHand = hand || null;
       updateWinds();
 
-      renderHand(handOutput, hand, groupMelds);
+      // 1/4 chance of self-drawn vs win by discard
+      const isSelfDrawn = Math.random() < 0.25;
+      currentWinType = isSelfDrawn ? WIN_TYPE_SELF_DRAWN : WIN_TYPE_DISCARD;
+
+      renderHand(handOutput, hand, groupMelds, { winType: currentWinType });
       renderFlowers(flowersOutput, hand ? hand.flowers : []);
       updateScoreDisplay();
     }
