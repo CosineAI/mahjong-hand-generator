@@ -232,15 +232,17 @@
       return;
     }
 
-    // Flatten tiles (melds + pair) into a single ordered line
-    const flat = [];
-    handData.melds.forEach((meld) => flat.push(...meld.tiles));
-    flat.push(...handData.pair);
+    // Split melds between open and closed, then flatten within each
+    // Here we treat the first 3 melds as open, remaining melds + pair as closed.
+    const openMelds = handData.melds.slice(0, 3);
+    const closedMelds = handData.melds.slice(3);
 
-    // Split into "open" and "closed" halves
-    const splitIndex = Math.floor(flat.length / 2);
-    const openTiles = flat.slice(0, splitIndex);
-    const closedTiles = flat.slice(splitIndex);
+    const openTiles = [];
+    openMelds.forEach((meld) => openTiles.push(...meld.tiles));
+
+    const closedTiles = [];
+    closedMelds.forEach((meld) => closedTiles.push(...meld.tiles));
+    closedTiles.push(...handData.pair);
 
     const halvesContainer = document.createElement("div");
     halvesContainer.className = "hand-halves";
