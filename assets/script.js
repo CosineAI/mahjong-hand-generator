@@ -1,16 +1,16 @@
 // Taiwanese Mahjong Winning Hand Generator
-// Uses simple text placeholders for tiles; images can be added later.
+// Now uses mahjong tile sprites for the main hand tiles.
 
 (function () {
   const MELD_COUNT = 5; // Taiwanese: 5 melds + 1 pair
-  const MAX_FLOWERS = 8; // 4 flowers + 4 seasons
+  const MAX_FLOWERS = 8; // flowers don't affect the hand, just random bonuses
 
   // --- Tile definitions ----------------------------------------------------
 
   const suits = [
-    { key: "dots", label: "Dots", short: "●" },
-    { key: "bams", label: "Bamboos", short: "🀐" },
-    { key: "chars", label: "Characters", short: "萬" }
+    { key: "dots", label: "Dots", short: "●", spritePrefix: "Circles" },
+    { key: "bams", label: "Bamboos", short: "🀐", spritePrefix: "Bamboo" },
+    { key: "chars", label: "Characters", short: "萬", spritePrefix: "Characters" }
   ];
 
   // Build standard tiles (1–9 of each suit, 4 copies each)
@@ -22,35 +22,28 @@
         name: `${rank} of ${suit.label}`,
         suit: suit.key,
         rank,
-        display: `${rank}${suit.short}`
+        display: `${rank}${suit.short}`,
+        image: `assets/mahjong_tiles/${suit.spritePrefix}${rank}.png`
       });
     }
   });
 
   // Honors: winds and dragons (4 copies each)
   const honorTileTypes = [
-    { key: "wind-east", name: "East Wind", display: "E" },
-    { key: "wind-south", name: "South Wind", display: "S" },
-    { key: "wind-west", name: "West Wind", display: "W" },
-    { key: "wind-north", name: "North Wind", display: "N" },
-    { key: "dragon-red", name: "Red Dragon", display: "R" },
-    { key: "dragon-green", name: "Green Dragon", display: "G" },
-    { key: "dragon-white", name: "White Dragon", display: "W?" }
+    { key: "wind-east", name: "East Wind", display: "E", image: "assets/mahjong_tiles/East.png" },
+    { key: "wind-south", name: "South Wind", display: "S", image: "assets/mahjong_tiles/South.png" },
+    { key: "wind-west", name: "West Wind", display: "W", image: "assets/mahjong_tiles/West.png" },
+    { key: "wind-north", name: "North Wind", display: "N", image: "assets/mahjong_tiles/North.png" },
+    { key: "dragon-red", name: "Red Dragon", display: "R", image: "assets/mahjong_tiles/Red.png" },
+    { key: "dragon-green", name: "Green Dragon", display: "G", image: "assets/mahjong_tiles/Green.png" },
+    { key: "dragon-white", name: "White Dragon", display: "W?", image: "assets/mahjong_tiles/White.png" }
   ];
 
   const allNormalTileTypes = [...suitedTileTypes, ...honorTileTypes];
 
-  // Flowers & seasons: 1 copy each
-  const flowerTiles = [
-    { key: "flower-plum", name: "Plum (Flower)", display: "Plum" },
-    { key: "flower-orchid", name: "Orchid (Flower)", display: "Orchid" },
-    { key: "flower-chrys", name: "Chrysanthemum (Flower)", display: "Chrys." },
-    { key: "flower-bamboo", name: "Bamboo (Flower)", display: "Bamboo" },
-    { key: "season-spring", name: "Spring (Season)", display: "Spring" },
-    { key: "season-summer", name: "Summer (Season)", display: "Summer" },
-    { key: "season-autumn", name: "Autumn (Season)", display: "Autumn" },
-    { key: "season-winter", name: "Winter (Season)", display: "Winter" }
-  ];
+  // Flowers: conceptually present, but no specific sprites —
+  // we just mark each as a red or blue flower and add them randomly.
+  const flowerColors = ["Red", "Blue"];
 
   // --- Utility functions ---------------------------------------------------
 
@@ -146,8 +139,17 @@
 
   function generateRandomFlowers() {
     const count = Math.floor(Math.random() * (MAX_FLOWERS + 1)); // 0–8
-    const shuffled = shuffle(flowerTiles.slice());
-    return shuffled.slice(0, count);
+    const flowers = [];
+    for (let i = 0; i < count; i++) {
+      const color = flowerColors[Math.floor(Math.random() * flowerColors.length)];
+      flowers.push({
+        key: `flower-${i}`,
+        name: `${color} Flower`,
+        display: `${color} Flower`,
+        color
+      });
+    }
+    return flowers;
   }
 
   // Core generator: builds one Taiwanese-style winning structure
@@ -193,9 +195,22 @@
   function createTileElement(tile) {
     const el = document.createElement("div");
     el.className = "tile";
-    // Use short display where available, fallback to name
-    el.textContent = tile.display || tile.name;
     el.title = tile.name;
+
+    if (tile.image) {
+      const img = document.createElement("img");
+      img.src = tile.image;
+      img.alt = tile.name;
+      img.className = "tile-image";
+      el.appendChild(img);
+    } else {
+      // Fallback to text if no image defined (e.g. for flowers)
+      const span = document.createElement("span");
+      span.className = "tile-text";
+      span.textContent = tile.display || tile.name;
+      el.appendChild(span);
+    }
+
     return el;
   }
 
@@ -267,7 +282,7 @@
       container.classList.add("empty");
       const p = document.createElement("p");
       p.className = "placeholder";
-      p.textContent = "No flowers or seasons for this hand.";
+      p.textContent = "No flowers for this hand.";
       container.appendChild(p);
       return;
     }
@@ -293,10 +308,27 @@
     const handOutput = document.getElementById("hand-output");
     const flowersOutput = document.getElementById("flowers-output");
     const groupMeldsCheckbox = document.getElementById("group-melds");
+    const roundWindEl = document.getElementById("round-wind");
+    const playerWindEl = document.getElementById("player-wind");
 
     if (!generateBtn || !handOutput || !flowersOutput) {
       console.warn("Mahjong generator: required elements not found.");
       return;
+    }
+
+    const windNames = ["East", "South", "West", "North"];
+
+    function randomWind() {
+      return windNames[Math.floor(Math.random() * windNames.length)];
+    }
+
+    function updateWinds() {
+      if (roundWindEl) {
+        roundWindEl.textContent = randomWind() + " Round";
+      }
+      if (playerWindEl) {
+        playerWindEl.textContent = randomWind() + " Seat";
+      }
     }
 
     function generateAndRender() {
@@ -305,6 +337,7 @@
 
       renderHand(handOutput, hand, groupMelds);
       renderFlowers(flowersOutput, hand ? hand.flowers : []);
+      updateWinds();
     }
 
     generateBtn.addEventListener("click", generateAndRender);
