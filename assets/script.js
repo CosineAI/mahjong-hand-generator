@@ -145,7 +145,7 @@
     shuffle(availableNumbers);
     const selectedNums = availableNumbers.slice(0, count);
 
-    return selectedNums.map((num) =&gt; {
+    return selectedNums.map((num) => {
       const color = flowerColors[Math.floor(Math.random() * flowerColors.length)];
       return {
         key: `flower-${num}`,
