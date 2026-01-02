@@ -23,16 +23,37 @@
       <div class="controls">
         <button id="generate-btn">Generate Winning Hand</button>
         <label class="checkbox">
-          <input type="checkbox" id="group-melds" checked>
+          <input type="checkbox" id="group-melds">
           <span>Group tiles by meld</span>
         </label>
       </div>
+
+      <section class="round-info">
+        <div class="round-box">
+          <div class="round-label">Round Wind</div>
+          <div id="round-wind" class="round-value">—</div>
+        </div>
+        <div class="round-box">
+          <div class="round-label">Player Wind</div>
+          <div id="player-wind" class="round-value">—</div>
+        </div>
+      </section>
 
       <section class="results">
         <div class="hand-section">
           <h2>Winning Hand</h2>
           <div id="hand-output" class="hand-output empty">
             <p class="placeholder">Click “Generate Winning Hand” to see a random hand.</p>
+          </div>
+
+          <div class="winning-tile-section">
+            <div class="winning-tile-header">
+              <span class="winning-tile-label">Winning Tile</span>
+              <span class="win-type-label" id="win-type">—</span>
+            </div>
+            <div class="winning-tile-row">
+              <div id="winning-tile" class="winning-tile-slot"></div>
+            </div>
           </div>
         </div>
 
@@ -57,6 +78,638 @@
             of distinct flower/season tiles alongside the hand.
           </p>
         </details>
+      </section>
+
+      <section class="scoring">
+        <div class="scoring-header">
+          <h2>Scoring</h2>
+          <label class="score-toggle">
+            <input type="checkbox" id="show-score" checked>
+            <span>Show calculated score</span>
+          </label>
+        </div>
+
+        <div class="score-rules" id="score-rules">
+          <div class="score-rule-row" data-rule-id="baseWin">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Base Win</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="5" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="noFlowers">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">No flowers</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="1" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="goodFlower">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Good flower</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt each</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="badFlower">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Bad flower</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="1" min="0" step="1">
+              <span class="score-rule-unit">pt each</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="roundWind">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Matching Round Wind</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt per triplet</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="playerWind">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Matching Player Wind</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt per triplet</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="otherWind">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Other Wind</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="1" min="0" step="1">
+              <span class="score-rule-unit">pt per triplet</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="dragon">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Red/Green/White Dragon</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt per triplet</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="allSequences">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">All melds are sequences</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="3" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="allSequencesNoFlowers">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">All melds are sequences, no flowers</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="10" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="noFlowersNoWindNoDragon">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">No Flowers, No Wind, No Dragon</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="4" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="sequence123and789SameSuit">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Melds 123 and 789 of same suit</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="triplet111and999SameSuit">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Melds 111 and 999 of same suit</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="3" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="twoMeldsSameSuitNumbers">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Two sequence melds of same suit &amp; numbers</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="3" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="threeMeldsSameSuitNumbers">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Three sequence melds of same suit &amp; numbers</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="15" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="fourMeldsSameSuitNumbers">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Four sequence melds of same suit &amp; numbers</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="30" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="twoMeldsSameNumberDifferentSuits">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Two sequence melds of same numbers, different suits</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="threeMeldsSameNumberDifferentSuits">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Three sequence melds of same numbers, different suits</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="10" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="fourMeldsSameNumberAtLeastTwoSuits">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Four sequence melds of same numbers (≥2 suits)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="20" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="fiveMeldsSameNumberAtLeastTwoSuits">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Five sequence melds of same numbers (≥2 suits)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="40" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="allClosedHand">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">All closed hand</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="3" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="twoClosedTriplets">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Two closed triplets</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="3" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="threeClosedTriplets">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Three closed triplets</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="10" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="fourClosedTriplets">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Four closed triplets</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="30" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="fiveClosedTriplets">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Five closed triplets</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="80" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="pair258">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Pair is 2, 5, or 8</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="twoSuitsNoHonors">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Only two suits (no winds or dragons)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="4" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="oneSuitWithHonors">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Only one suit (winds/dragons allowed)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="30" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="oneSuitNoHonors">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Only one suit (no winds, no dragons)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="80" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="openDragon">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Open Dragon (123 456 789 of one suit)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="10" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="closedDragon">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Closed Dragon (123 456 789 of one suit, all closed)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="20" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="openMixedDragon">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Open Mixed Dragon (123 456 789 in three suits)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="8" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="closedMixedDragon">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Closed Mixed Dragon (123 456 789 in three suits)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="15" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="smallFiveSuits">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Small 5 suits (dragon, wind, bamboo, character, dot)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="5" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="bigFiveSuits">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Big 5 suits (dragon &amp; wind triplets)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="10" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="smallSevenSuits">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Small 7 suits (5 suits + red &amp; blue flowers)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="15" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="bigSevenSuits">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Big 7 suits (triplet dragon &amp; wind + red &amp; blue flowers)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="20" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="smallThreeDragons">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Small Three Dragons (2 dragon triplets + dragon pair)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="30" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="bigThreeDragons">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Big Three Dragons (3 dragon triplets)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="60" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="smallThreeWinds">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Small Three Winds (2 wind triplets + wind pair)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="15" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="bigThreeWinds">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Big Three Winds (3 wind triplets)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="30" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="smallFourWinds">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Small Four Winds (3 wind triplets + wind pair)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="60" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="bigFourWinds">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Big Four Winds (4 wind triplets)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="80" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="onlyDragonsWinds">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Only Dragons/Winds</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="100" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="relyOnOthers">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Rely on others (one tile left closed before win)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="15" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="relyOnOthersHalf">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Rely on others – Half (one tile left closed before win, self-drawn)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="8" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="edgeWin">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Edge win (1-2 wait 3 / 7-8 wait 7)</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="holeWin">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Hole win</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="pairWin">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Pair win</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="2" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="falseEdgeWin">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">False edge win</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="1" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+
+          <div class="score-rule-row" data-rule-id="selfDrawn">
+            <label class="score-rule-main">
+              <input type="checkbox" checked>
+              <span class="score-rule-label">Self-drawn</span>
+            </label>
+            <div class="score-rule-value-wrap">
+              <span class="score-rule-mult">×</span>
+              <input type="number" class="score-rule-value" value="1" min="0" step="1">
+              <span class="score-rule-unit">pt</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="score-display" id="score-display">
+          <div class="score-total">
+            Total Score:
+            <span id="score-total-value">0</span>
+          </div>
+          <div class="score-breakdown" id="score-breakdown"></div>
+        </div>
       </section>
     </section>
   </main>
