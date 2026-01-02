@@ -3,7 +3,7 @@
 
 (function () {
   const MELD_COUNT = 5; // Taiwanese: 5 melds + 1 pair
-  const MAX_FLOWERS = 8; // flowers don't affect the hand, just random bonuses
+  const MAX_FLOWERS = 4; // numbered flowers 1–4; they don't affect the hand, just random bonuses
 
   // --- Tile definitions ----------------------------------------------------
 
@@ -138,18 +138,23 @@
   }
 
   function generateRandomFlowers() {
-    const count = Math.floor(Math.random() * (MAX_FLOWERS + 1)); // 0–8
-    const flowers = [];
-    for (let i = 0; i < count; i++) {
+    // Choose a random subset of flower numbers 1–4, each with a random color
+    const availableNumbers = [1, 2, 3, 4];
+    const count = Math.floor(Math.random() * (MAX_FLOWERS + 1)); // 0–4
+
+    shuffle(availableNumbers);
+    const selectedNums = availableNumbers.slice(0, count);
+
+    return selectedNums.map((num) =&gt; {
       const color = flowerColors[Math.floor(Math.random() * flowerColors.length)];
-      flowers.push({
-        key: `flower-${i}`,
-        name: `${color} Flower`,
-        display: `${color} Flower`,
-        color
-      });
-    }
-    return flowers;
+      return {
+        key: `flower-${num}`,
+        name: `${color} Flower ${num}`,
+        display: `${color} ${num}`,
+        color,
+        number: num
+      };
+    });
   }
 
   // Core generator: builds one Taiwanese-style winning structure
@@ -214,7 +219,7 @@
     return el;
   }
 
-  function renderHand(container, handData, groupMelds) {
+  function renderHand(container, handData, _groupMelds) {
     container.innerHTML = "";
     container.classList.remove("empty");
 
@@ -227,51 +232,49 @@
       return;
     }
 
-    if (groupMelds) {
-      // Render each meld in its own group row
-      handData.melds.forEach((meld, index) => {
-        const row = document.createElement("div");
-        row.className = "meld-row";
+    // Flatten tiles (melds + pair) into a single ordered line
+    const flat = [];
+    handData.melds.forEach((meld) => flat.push(...meld.tiles));
+    flat.push(...handData.pair);
 
-        const label = document.createElement("div");
-        label.className = "meld-label";
-        label.textContent = `Meld ${index + 1} (${meld.type.toUpperCase()})`;
-        row.appendChild(label);
+    // Split into "open" and "closed" halves
+    const splitIndex = Math.floor(flat.length / 2);
+    const openTiles = flat.slice(0, splitIndex);
+    const closedTiles = flat.slice(splitIndex);
 
-        const tilesWrap = document.createElement("div");
-        tilesWrap.className = "meld-tiles";
-        meld.tiles.forEach((t) => tilesWrap.appendChild(createTileElement(t)));
-        row.appendChild(tilesWrap);
+    const halvesContainer = document.createElement("div");
+    halvesContainer.className = "hand-halves";
 
-        container.appendChild(row);
-      });
+    const openHalf = document.createElement("div");
+    openHalf.className = "hand-half";
 
-      // Pair
-      const pairRow = document.createElement("div");
-      pairRow.className = "meld-row pair-row";
+    const openLabel = document.createElement("div");
+    openLabel.className = "half-label";
+    openLabel.textContent = "Open";
+    openHalf.appendChild(openLabel);
 
-      const pairLabel = document.createElement("div");
-      pairLabel.className = "meld-label";
-      pairLabel.textContent = "Pair";
-      pairRow.appendChild(pairLabel);
+    const openWrap = document.createElement("div");
+    openWrap.className = "half-tiles";
+    openTiles.forEach((t) => openWrap.appendChild(createTileElement(t)));
+    openHalf.appendChild(openWrap);
 
-      const pairTilesWrap = document.createElement("div");
-      pairTilesWrap.className = "meld-tiles";
-      handData.pair.forEach((t) => pairTilesWrap.appendChild(createTileElement(t)));
-      pairRow.appendChild(pairTilesWrap);
+    const closedHalf = document.createElement("div");
+    closedHalf.className = "hand-half";
 
-      container.appendChild(pairRow);
-    } else {
-      // Flattened tiles in one row (melds + pair)
-      const flat = [];
-      handData.melds.forEach((meld) => flat.push(...meld.tiles));
-      flat.push(...handData.pair);
+    const closedLabel = document.createElement("div");
+    closedLabel.className = "half-label";
+    closedLabel.textContent = "Closed";
+    closedHalf.appendChild(closedLabel);
 
-      const row = document.createElement("div");
-      row.className = "flat-hand-row";
-      flat.forEach((t) => row.appendChild(createTileElement(t)));
-      container.appendChild(row);
-    }
+    const closedWrap = document.createElement("div");
+    closedWrap.className = "half-tiles";
+    closedTiles.forEach((t) => closedWrap.appendChild(createTileElement(t)));
+    closedHalf.appendChild(closedWrap);
+
+    halvesContainer.appendChild(openHalf);
+    halvesContainer.appendChild(closedHalf);
+
+    container.appendChild(halvesContainer);
   }
 
   function renderFlowers(container, flowers) {
