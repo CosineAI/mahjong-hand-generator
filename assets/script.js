@@ -209,6 +209,138 @@
       evaluator: (ctx) => (ctx.closedTripletCount >= 4 ? 1 : 0)
     },
     {
+      id: "fiveClosedTriplets",
+      label: "Five closed triplets",
+      defaultPoints: 80,
+      evaluator: (ctx) => (ctx.closedTripletCount === 5 ? 1 : 0)
+    },
+    {
+      id: "pair258",
+      label: "Pair is 2, 5, or 8",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.pairIs258
+    },
+    {
+      id: "twoSuitsNoHonors",
+      label: "Only two suits (no winds or dragons)",
+      defaultPoints: 4,
+      evaluator: (ctx) => ctx.twoSuitsNoHonors
+    },
+    {
+      id: "oneSuitWithHonors",
+      label: "Only one suit (winds/dragons allowed)",
+      defaultPoints: 30,
+      evaluator: (ctx) => ctx.oneSuitWithHonorsAllowed
+    },
+    {
+      id: "oneSuitNoHonors",
+      label: "Only one suit (no winds, no dragons)",
+      defaultPoints: 80,
+      evaluator: (ctx) => ctx.oneSuitNoHonors
+    },
+    {
+      id: "openDragon",
+      label: "Open Dragon (123 456 789 of one suit)",
+      defaultPoints: 10,
+      evaluator: (ctx) => ctx.openDragonCount
+    },
+    {
+      id: "closedDragon",
+      label: "Closed Dragon (123 456 789 of one suit, all closed)",
+      defaultPoints: 20,
+      evaluator: (ctx) => ctx.closedDragonCount
+    },
+    {
+      id: "openMixedDragon",
+      label: "Open Mixed Dragon (123 456 789 in three suits)",
+      defaultPoints: 8,
+      evaluator: (ctx) => ctx.openMixedDragonCount
+    },
+    {
+      id: "closedMixedDragon",
+      label: "Closed Mixed Dragon (123 456 789 in three suits)",
+      defaultPoints: 15,
+      evaluator: (ctx) => ctx.closedMixedDragonCount
+    },
+    {
+      id: "smallFiveSuits",
+      label: "Small 5 suits (dragon, wind, bamboo, character, dot)",
+      defaultPoints: 5,
+      evaluator: (ctx) => ctx.smallFiveSuits
+    },
+    {
+      id: "bigFiveSuits",
+      label: "Big 5 suits (dragon & wind triplets)",
+      defaultPoints: 10,
+      evaluator: (ctx) => ctx.bigFiveSuits
+    },
+    {
+      id: "smallSevenSuits",
+      label: "Small 7 suits (5 suits + red & blue flowers)",
+      defaultPoints: 15,
+      evaluator: (ctx) => ctx.smallSevenSuits
+    },
+    {
+      id: "bigSevenSuits",
+      label: "Big 7 suits (triplet dragon & wind + red & blue flowers)",
+      defaultPoints: 20,
+      evaluator: (ctx) => ctx.bigSevenSuits
+    },
+    {
+      id: "smallThreeDragons",
+      label: "Small Three Dragons (2 dragon triplets + dragon pair)",
+      defaultPoints: 30,
+      evaluator: (ctx) => ctx.smallThreeDragons
+    },
+    {
+      id: "bigThreeDragons",
+      label: "Big Three Dragons (3 dragon triplets)",
+      defaultPoints: 60,
+      evaluator: (ctx) => ctx.bigThreeDragons
+    },
+    {
+      id: "smallThreeWinds",
+      label: "Small Three Winds (2 wind triplets + wind pair)",
+      defaultPoints: 15,
+      evaluator: (ctx) => ctx.smallThreeWinds
+    },
+    {
+      id: "bigThreeWinds",
+      label: "Big Three Winds (3 wind triplets)",
+      defaultPoints: 30,
+      evaluator: (ctx) => ctx.bigThreeWinds
+    },
+    {
+      id: "smallFourWinds",
+      label: "Small Four Winds (3 wind triplets + wind pair)",
+      defaultPoints: 60,
+      evaluator: (ctx) => ctx.smallFourWinds
+    },
+    {
+      id: "bigFourWinds",
+      label: "Big Four Winds (4 wind triplets)",
+      defaultPoints: 80,
+      evaluator: (ctx) => ctx.bigFourWinds
+    },
+    {
+      id: "onlyDragonsWinds",
+      label: "Only Dragons/Winds",
+      defaultPoints: 100,
+      evaluator: (ctx) => ctx.onlyDragonsWinds
+    },
+    {
+      id: "relyOnOthers",
+      label: "Rely on others (one tile left closed before win)",
+      defaultPoints: 15,
+      evaluator: (ctx) => ctx.relyOnOthers
+    },
+    {
+      id: "relyOnOthersHalf",
+      label: "Rely on others – Half (one tile left closed before win, self-drawn)",
+      defaultPoints: 8,
+      evaluator: (ctx) => ctx.relyOnOthersHalf
+    },
+    {
       id: "edgeWin",
       label: "Edge win (1-2 wait 3 / 7-8 wait 7)",
       defaultPoints: 2,
@@ -475,6 +607,7 @@
     const allClosedHand = openMeldCount === 0;
 
     let closedTripletCount = 0;
+    let closedTilesCount = 0;
 
     const chowsBySuit = {};
     const pungRanksBySuit = {};
@@ -482,10 +615,27 @@
     const sameNumberPatternCounts = {};
     const sameNumberPatternSuits = {};
 
+    const dragonTripletKeys = new Set();
+    const windTripletKeys = new Set();
+
+    const mixedDragon123Suits = new Set();
+    const mixedDragon456Suits = new Set();
+    const mixedDragon789Suits = new Set();
+    const mixedDragonClosed123Suits = new Set();
+    const mixedDragonClosed456Suits = new Set();
+    const mixedDragonClosed789Suits = new Set();
+
     hand.melds.forEach((meld, index) => {
       if (!meld || !Array.isArray(meld.tiles) || meld.tiles.length === 0) return;
 
       const firstTile = meld.tiles[0];
+      const suit = firstTile.suit;
+      const isSuited = !!suit && typeof firstTile.rank === "number";
+      const isClosedMeld = index >= openMeldCount;
+
+      if (isClosedMeld) {
+        closedTilesCount += meld.tiles.length;
+      }
 
       // Triplet-based wind/dragon scoring
       if (meld.type === "pung") {
@@ -505,14 +655,14 @@
         }
         if (dragonKeys.includes(tileKey)) {
           dragonTripletCount += 1;
+          dragonTripletKeys.add(tileKey);
         }
-      }
-
-      const suit = firstTile.suit;
-      const isSuited = !!suit && typeof firstTile.rank === "number";
-
-      if (meld.type === "pung" && index >= openMeldCount) {
-        closedTripletCount += 1;
+        if (windTileKeys.includes(tileKey)) {
+          windTripletKeys.add(tileKey);
+        }
+        if (isClosedMeld) {
+          closedTripletCount += 1;
+        }
       }
 
       if (!isSuited) {
@@ -524,17 +674,37 @@
         .slice()
         .sort((a, b) => a - b);
 
+      const minRank = ranks[0];
+      const maxRank = ranks[ranks.length - 1];
+
       if (meld.type === "chow") {
         if (!chowsBySuit[suit]) {
-          chowsBySuit[suit] = { has123: false, has789: false };
+          chowsBySuit[suit] = {
+            has123: false,
+            has456: false,
+            has789: false,
+            closed123: false,
+            closed456: false,
+            closed789: false
+          };
         }
-        const minRank = ranks[0];
-        const maxRank = ranks[ranks.length - 1];
+        const info = chowsBySuit[suit];
+
         if (minRank === 1 && maxRank === 3) {
-          chowsBySuit[suit].has123 = true;
-        }
-        if (minRank === 7 && maxRank === 9) {
-          chowsBySuit[suit].has789 = true;
+          info.has123 = true;
+          if (isClosedMeld) info.closed123 = true;
+          mixedDragon123Suits.add(suit);
+          if (isClosedMeld) mixedDragonClosed123Suits.add(suit);
+        } else if (minRank === 4 && maxRank === 6) {
+          info.has456 = true;
+          if (isClosedMeld) info.closed456 = true;
+          mixedDragon456Suits.add(suit);
+          if (isClosedMeld) mixedDragonClosed456Suits.add(suit);
+        } else if (minRank === 7 && maxRank === 9) {
+          info.has789 = true;
+          if (isClosedMeld) info.closed789 = true;
+          mixedDragon789Suits.add(suit);
+          if (isClosedMeld) mixedDragonClosed789Suits.add(suit);
         }
       }
 
@@ -619,6 +789,239 @@
         fiveSameNumberAtLeastTwoSuits += 1;
       }
     });
+
+    // Pure-suit dragon (123 / 456 / 789 in one suit)
+    let openDragonCount = 0;
+    let closedDragonCount = 0;
+
+    Object.keys(chowsBySuit).forEach((suit) => {
+      const info = chowsBySuit[suit];
+      if (info.has123 && info.has456 && info.has789) {
+        if (info.closed123 && info.closed456 && info.closed789) {
+          closedDragonCount += 1;
+        } else {
+          openDragonCount += 1;
+        }
+      }
+    });
+
+    // Mixed-suit dragon (123 / 456 / 789 across three suits)
+    let openMixedDragonCount = 0;
+    let closedMixedDragonCount = 0;
+
+    const suits123 = Array.from(mixedDragon123Suits);
+    const suits456 = Array.from(mixedDragon456Suits);
+    const suits789 = Array.from(mixedDragon789Suits);
+
+    let foundAnyMixed = false;
+    let foundClosedMixed = false;
+
+    for (let i = 0; i < suits123.length; i++) {
+      for (let j = 0; j < suits456.length; j++) {
+        for (let k = 0; k < suits789.length; k++) {
+          const s1 = suits123[i];
+          const s2 = suits456[j];
+          const s3 = suits789[k];
+          if (s1 === s2 || s1 === s3 || s2 === s3) {
+            continue;
+          }
+          const allClosed =
+            mixedDragonClosed123Suits.has(s1) &&
+            mixedDragonClosed456Suits.has(s2) &&
+            mixedDragonClosed789Suits.has(s3);
+          foundAnyMixed = true;
+          if (allClosed) {
+            foundClosedMixed = true;
+            break;
+          }
+        }
+        if (foundClosedMixed) break;
+      }
+      if (foundClosedMixed) break;
+    }
+
+    if (foundClosedMixed) {
+      closedMixedDragonCount = 1;
+    } else if (foundAnyMixed) {
+      openMixedDragonCount = 1;
+    }
+
+    // Suit usage and honor-only patterns
+    let hasDots = false;
+    let hasBams = false;
+    let hasChars = false;
+    let suitedTileCount = 0;
+
+    tiles.forEach((t) => {
+      if (t.suit && typeof t.rank === "number") {
+        suitedTileCount += 1;
+        if (t.suit === "dots") hasDots = true;
+        else if (t.suit === "bams") hasBams = true;
+        else if (t.suit === "chars") hasChars = true;
+      }
+    });
+
+    const suitsUsed = new Set();
+    if (hasDots) suitsUsed.add("dots");
+    if (hasBams) suitsUsed.add("bams");
+    if (hasChars) suitsUsed.add("chars");
+
+    const suitCount = suitsUsed.size;
+    const hasDragonTiles = dragonTileCount > 0;
+    const hasWindTiles = totalWindTileCount > 0;
+
+    const pairType = hand.pairType || null;
+    const pairTypeKey = pairType ? pairType.key : null;
+    const pairRank =
+      pairType && typeof pairType.rank === "number" ? pairType.rank : null;
+
+    const pairIs258 =
+      pairRank === 2 || pairRank === 5 || pairRank === 8 ? 1 : 0;
+
+    const twoSuitsNoHonors =
+      suitCount === 2 && !hasDragonTiles && !hasWindTiles ? 1 : 0;
+
+    const oneSuitWithHonorsAllowed = suitCount === 1 ? 1 : 0;
+    const oneSuitNoHonors =
+      suitCount === 1 && !hasDragonTiles && !hasWindTiles ? 1 : 0;
+
+    const hasRedFlower = flowers.some((f) => f.color === "Red");
+    const hasBlueFlower = flowers.some((f) => f.color === "Blue");
+
+    const hasAllFiveSuitTypes =
+      hasDragonTiles && hasWindTiles && hasDots && hasBams && hasChars;
+
+    const windTripletCount =
+      roundWindTripletCount + playerWindTripletCount + otherWindTripletCount;
+
+    // 5-suit / 7-suit patterns with override behavior
+    const baseSmallFiveSuits = hasAllFiveSuitTypes ? 1 : 0;
+    const baseBigFiveSuits =
+      baseSmallFiveSuits && dragonTripletCount > 0 && windTripletCount > 0
+        ? 1
+        : 0;
+
+    const baseSmallSevenSuits =
+      baseSmallFiveSuits && hasRedFlower && hasBlueFlower ? 1 : 0;
+    const baseBigSevenSuits =
+      baseSmallSevenSuits && dragonTripletCount > 0 && windTripletCount > 0
+        ? 1
+        : 0;
+
+    let smallFiveSuits = 0;
+    let bigFiveSuits = 0;
+    let smallSevenSuits = 0;
+    let bigSevenSuits = 0;
+
+    if (baseBigSevenSuits) {
+      bigSevenSuits = 1;
+    } else if (baseSmallSevenSuits) {
+      smallSevenSuits = 1;
+    } else if (baseBigFiveSuits) {
+      bigFiveSuits = 1;
+    } else if (baseSmallFiveSuits) {
+      smallFiveSuits = 1;
+    }
+
+    const onlyDragonsWinds =
+      suitedTileCount === 0 && totalWindTileCount + dragonTileCount > 0 ? 1 : 0;
+
+    // Dragon / wind set patterns
+    const dragonTripletKeysArray = Array.from(dragonTripletKeys);
+    const windTripletKeysArray = Array.from(windTripletKeys);
+
+    let smallThreeDragons = 0;
+    let bigThreeDragons = 0;
+
+    if (dragonTripletKeysArray.length === 3) {
+      bigThreeDragons = 1;
+    } else if (
+      dragonTripletKeysArray.length === 2 &&
+      pairTypeKey &&
+      dragonKeys.includes(pairTypeKey)
+    ) {
+      const union = new Set(dragonTripletKeysArray);
+      union.add(pairTypeKey);
+      if (union.size === 3) {
+        smallThreeDragons = 1;
+      }
+    }
+
+    if (bigThreeDragons) {
+      smallThreeDragons = 0;
+    }
+
+    const allWindKeys = windTileKeys;
+    const windTripletSetSize = windTripletKeysArray.length;
+    const windPairKey =
+      pairTypeKey && allWindKeys.includes(pairTypeKey) ? pairTypeKey : null;
+
+    let isSmallThreeWinds = false;
+    let isBigThreeWinds = false;
+    let isSmallFourWinds = false;
+    let isBigFourWinds = false;
+
+    if (windTripletSetSize === 4) {
+      isBigFourWinds = true;
+    } else if (
+      windTripletSetSize === 3 &&
+      windPairKey &&
+      (() => {
+        const union = new Set(windTripletKeysArray);
+        union.add(windPairKey);
+        return union.size === 4;
+      })()
+    ) {
+      isSmallFourWinds = true;
+    } else if (windTripletSetSize === 3) {
+      isBigThreeWinds = true;
+    } else if (
+      windTripletSetSize === 2 &&
+      windPairKey &&
+      (() => {
+        const union = new Set(windTripletKeysArray);
+        union.add(windPairKey);
+        return union.size === 3;
+      })()
+    ) {
+      isSmallThreeWinds = true;
+    }
+
+    let smallThreeWinds = 0;
+    let bigThreeWinds = 0;
+    let smallFourWinds = 0;
+    let bigFourWinds = 0;
+
+    if (isBigFourWinds) {
+      bigFourWinds = 1;
+    } else if (isSmallFourWinds) {
+      smallFourWinds = 1;
+    } else if (isBigThreeWinds) {
+      bigThreeWinds = 1;
+    } else if (isSmallThreeWinds) {
+      smallThreeWinds = 1;
+    }
+
+    // Rely on others: only one tile left closed prior to winning
+    closedTilesCount += hand.pair.length;
+    let closedTilesBeforeWin = closedTilesCount;
+    if (currentWinningTile) {
+      closedTilesBeforeWin -= 1;
+    }
+    if (closedTilesBeforeWin < 0) {
+      closedTilesBeforeWin = 0;
+    }
+
+    let relyOnOthers = 0;
+    let relyOnOthersHalf = 0;
+
+    if (closedTilesBeforeWin === 1) {
+      if (isSelfDrawn) {
+        relyOnOthersHalf = 1;
+      } else {
+        relyOnOthers = 1;
+      }
+    }
 
     // Winning tile wait-type analysis
     let waitEdge = 0;
@@ -725,7 +1128,28 @@
       waitHole,
       waitPair,
       waitFalseEdge,
-      isSelfDrawn
+      isSelfDrawn,
+      openDragonCount,
+      closedDragonCount,
+      openMixedDragonCount,
+      closedMixedDragonCount,
+      pairIs258,
+      twoSuitsNoHonors,
+      oneSuitWithHonorsAllowed,
+      oneSuitNoHonors,
+      smallFiveSuits,
+      bigFiveSuits,
+      smallSevenSuits,
+      bigSevenSuits,
+      onlyDragonsWinds,
+      smallThreeDragons,
+      bigThreeDragons,
+      smallThreeWinds,
+      bigThreeWinds,
+      smallFourWinds,
+      bigFourWinds,
+      relyOnOthers,
+      relyOnOthersHalf
     };
   }
 
