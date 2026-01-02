@@ -118,6 +118,95 @@
       defaultPoints: 10,
       evaluator: (ctx) =>
         ctx.allMeldsSequences && ctx.flowers.length === 0 ? 1 : 0
+    },
+    {
+      id: "noFlowersNoWindNoDragon",
+      label: "No Flowers, No Wind, No Dragon",
+      defaultPoints: 4,
+      evaluator: (ctx) =>
+        ctx.flowers.length === 0 &&
+        ctx.totalWindTileCount === 0 &&
+        ctx.dragonTileCount === 0
+          ? 1
+          : 0
+    },
+    {
+      id: "sequence123and789SameSuit",
+      label: "Melds 123 and 789 of same suit",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.count123and789SameSuit
+    },
+    {
+      id: "triplet111and999SameSuit",
+      label: "Melds 111 and 999 of same suit",
+      defaultPoints: 3,
+      evaluator: (ctx) => ctx.count111and999SameSuit
+    },
+    {
+      id: "twoMeldsSameSuitNumbers",
+      label: "Two melds of same suit and numbers",
+      defaultPoints: 3,
+      evaluator: (ctx) => ctx.twoSameSuitNumbers
+    },
+    {
+      id: "threeMeldsSameSuitNumbers",
+      label: "Three melds of same suit and numbers",
+      defaultPoints: 15,
+      evaluator: (ctx) => ctx.threeSameSuitNumbers
+    },
+    {
+      id: "fourMeldsSameSuitNumbers",
+      label: "Four melds of same suit and numbers",
+      defaultPoints: 30,
+      evaluator: (ctx) => ctx.fourSameSuitNumbers
+    },
+    {
+      id: "twoMeldsSameNumberDifferentSuits",
+      label: "Two melds of same numbers, different suits",
+      defaultPoints: 2,
+      evaluator: (ctx) => ctx.twoSameNumberDifferentSuits
+    },
+    {
+      id: "threeMeldsSameNumberDifferentSuits",
+      label: "Three melds of same numbers, different suits",
+      defaultPoints: 10,
+      evaluator: (ctx) => ctx.threeSameNumberDifferentSuits
+    },
+    {
+      id: "fourMeldsSameNumberAtLeastTwoSuits",
+      label: "Four melds of same numbers (≥2 suits)",
+      defaultPoints: 20,
+      evaluator: (ctx) => ctx.fourSameNumberAtLeastTwoSuits
+    },
+    {
+      id: "fiveMeldsSameNumberAtLeastTwoSuits",
+      label: "Five melds of same numbers (≥2 suits)",
+      defaultPoints: 40,
+      evaluator: (ctx) => ctx.fiveSameNumberAtLeastTwoSuits
+    },
+    {
+      id: "allClosedHand",
+      label: "All Closed hand",
+      defaultPoints: 3,
+      evaluator: (ctx) => (ctx.allClosedHand ? 1 : 0)
+    },
+    {
+      id: "twoClosedTriplets",
+      label: "Two closed triplets",
+      defaultPoints: 3,
+      evaluator: (ctx) => (ctx.closedTripletCount === 2 ? 1 : 0)
+    },
+    {
+      id: "threeClosedTriplets",
+      label: "Three closed triplets",
+      defaultPoints: 10,
+      evaluator: (ctx) => (ctx.closedTripletCount === 3 ? 1 : 0)
+    },
+    {
+      id: "fourClosedTriplets",
+      label: "Four closed triplets",
+      defaultPoints: 30,
+      evaluator: (ctx) => (ctx.closedTripletCount >= 4 ? 1 : 0)
     }
   ];
 
@@ -125,6 +214,7 @@
   let currentPlayerWind = null;
   let currentHand = null;
   let currentWinType = null;
+  let currentOpenMeldCount = 0;
 
   // --- Utility functions ---------------------------------------------------
 
@@ -306,6 +396,12 @@
       otherWindTileCount += tileCounts[key] || 0;
     });
 
+    const windTileKeys = Object.values(windKeyByName);
+    let totalWindTileCount = 0;
+    windTileKeys.forEach((key) => {
+      totalWindTileCount += tileCounts[key] || 0;
+    });
+
     let dragonTileCount = 0;
     dragonKeys.forEach((key) => {
       dragonTileCount += tileCounts[key] || 0;
@@ -334,6 +430,137 @@
       }
     });
 
+    const totalMelds = hand.melds.length;
+    const openMeldCount =
+      typeof currentOpenMeldCount === "number"
+        ? Math.max(0, Math.min(currentOpenMeldCount, totalMelds))
+        : 0;
+    const allClosedHand = openMeldCount === 0;
+
+    let closedTripletCount = 0;
+
+    const chowsBySuit = {};
+    const pungRanksBySuit = {};
+    const sameSuitPatternCounts = {};
+    const sameNumberPatternCounts = {};
+    const sameNumberPatternSuits = {};
+
+    hand.melds.forEach((meld, index) => {
+      if (!meld || !Array.isArray(meld.tiles) || meld.tiles.length === 0) return;
+
+      const firstTile = meld.tiles[0];
+      const suit = firstTile.suit;
+      const isSuited = !!suit && typeof firstTile.rank === "number";
+
+      if (meld.type === "pung" && index >= openMeldCount) {
+        closedTripletCount += 1;
+      }
+
+      if (!isSuited) {
+        return;
+      }
+
+      const ranks = meld.tiles
+        .map((t) => t.rank)
+        .slice()
+        .sort((a, b) => a - b);
+
+      if (meld.type === "chow") {
+        if (!chowsBySuit[suit]) {
+          chowsBySuit[suit] = { has123: false, has789: false };
+        }
+        const minRank = ranks[0];
+        const maxRank = ranks[ranks.length - 1];
+        if (minRank === 1 && maxRank === 3) {
+          chowsBySuit[suit].has123 = true;
+        }
+        if (minRank === 7 && maxRank === 9) {
+          chowsBySuit[suit].has789 = true;
+        }
+      }
+
+      if (meld.type === "pung") {
+        if (!pungRanksBySuit[suit]) {
+          pungRanksBySuit[suit] = new Set();
+        }
+        pungRanksBySuit[suit].add(ranks[0]);
+      }
+
+      // For \"same suit & numbers\" and \"same numbers\" rules, only consider sequences (chows),
+      // not triplets. Closed triplets are handled separately.
+      let basePattern = null;
+      if (meld.type === "chow") {
+        basePattern = `chow:${ranks.join("-")}`;
+      }
+
+      if (basePattern) {
+        const keySuitPattern = `${suit}|${basePattern}`;
+        sameSuitPatternCounts[keySuitPattern] =
+          (sameSuitPatternCounts[keySuitPattern] || 0) + 1;
+
+        sameNumberPatternCounts[basePattern] =
+          (sameNumberPatternCounts[basePattern] || 0) + 1;
+
+        if (!sameNumberPatternSuits[basePattern]) {
+          sameNumberPatternSuits[basePattern] = new Set();
+        }
+        sameNumberPatternSuits[basePattern].add(suit);
+      }
+    });
+
+    let count123and789SameSuit = 0;
+    Object.keys(chowsBySuit).forEach((suit) => {
+      const info = chowsBySuit[suit];
+      if (info.has123 && info.has789) {
+        count123and789SameSuit += 1;
+      }
+    });
+
+    let count111and999SameSuit = 0;
+    Object.keys(pungRanksBySuit).forEach((suit) => {
+      const ranksSet = pungRanksBySuit[suit];
+      if (ranksSet.has(1) && ranksSet.has(9)) {
+        count111and999SameSuit += 1;
+      }
+    });
+
+    let twoSameSuitNumbers = 0;
+    let threeSameSuitNumbers = 0;
+    let fourSameSuitNumbers = 0;
+
+    Object.values(sameSuitPatternCounts).forEach((count) => {
+      if (count === 2) {
+        twoSameSuitNumbers += 1;
+      } else if (count === 3) {
+        threeSameSuitNumbers += 1;
+      } else if (count >= 4) {
+        fourSameSuitNumbers += 1;
+      }
+    });
+
+    let twoSameNumberDifferentSuits = 0;
+    let threeSameNumberDifferentSuits = 0;
+    let fourSameNumberAtLeastTwoSuits = 0;
+    let fiveSameNumberAtLeastTwoSuits = 0;
+
+    Object.keys(sameNumberPatternCounts).forEach((pattern) => {
+      const count = sameNumberPatternCounts[pattern];
+      const suitsSet = sameNumberPatternSuits[pattern];
+      const suitCount = suitsSet ? suitsSet.size : 0;
+
+      if (suitCount < 2) return;
+
+      if (count === 2) {
+        twoSameNumberDifferentSuits += 1;
+      } else if (count === 3 && suitCount >= 3) {
+        threeSameNumberDifferentSuits += 1;
+      } else if (count === 4) {
+        fourSameNumberAtLeastTwoSuits += 1;
+      } else if (count >= 5) {
+        fiveSameNumberAtLeastTwoSuits += 1;
+      }
+    });
+
     const allMeldsSequences = hand.melds.every((m) => m.type === "chow");
 
     return {
@@ -345,8 +572,20 @@
       roundWindTileCount,
       playerWindTileCount,
       otherWindTileCount,
+      totalWindTileCount,
       dragonTileCount,
-      allMeldsSequences
+      allMeldsSequences,
+      count123and789SameSuit,
+      count111and999SameSuit,
+      twoSameSuitNumbers,
+      threeSameSuitNumbers,
+      fourSameSuitNumbers,
+      twoSameNumberDifferentSuits,
+      threeSameNumberDifferentSuits,
+      fourSameNumberAtLeastTwoSuits,
+      fiveSameNumberAtLeastTwoSuits,
+      allClosedHand,
+      closedTripletCount
     };
   }
 
@@ -423,8 +662,12 @@
       winningTileContainer.innerHTML = "";
     }
     if (winTypeEl) {
-      winTypeEl.textContent = winType === WIN_TYPE_SELF_DRAWN ? "Self-drawn" :
-        winType === WIN_TYPE_DISCARD ? "Win" : "—";
+      winTypeEl.textContent =
+        winType === WIN_TYPE_SELF_DRAWN
+          ? "Self-drawn"
+          : winType === WIN_TYPE_DISCARD
+          ? "Win"
+          : "—";
     }
 
     if (!handData) {
@@ -436,10 +679,15 @@
       return;
     }
 
-    // Randomly choose how many melds are open vs closed, then flatten within each.
-    // Any closed melds plus the pair are shown under "Closed".
+    // Choose how many melds are open vs closed. If not provided, randomise.
     const totalMelds = handData.melds.length;
-    const openMeldCount = Math.floor(Math.random() * (totalMelds + 1)); // 0..totalMelds
+    let openMeldCount =
+      typeof opts.openMeldCount === "number"
+        ? opts.openMeldCount
+        : Math.floor(Math.random() * (totalMelds + 1)); // 0..totalMelds
+
+    if (openMeldCount < 0) openMeldCount = 0;
+    if (openMeldCount > totalMelds) openMeldCount = totalMelds;
 
     const openMelds = handData.melds.slice(0, openMeldCount);
     const closedMelds = handData.melds.slice(openMeldCount);
@@ -627,7 +875,17 @@
       const isSelfDrawn = Math.random() < 0.25;
       currentWinType = isSelfDrawn ? WIN_TYPE_SELF_DRAWN : WIN_TYPE_DISCARD;
 
-      renderHand(handOutput, hand, groupMelds, { winType: currentWinType });
+      let openMeldCount = 0;
+      if (hand && Array.isArray(hand.melds)) {
+        const totalMelds = hand.melds.length;
+        openMeldCount = Math.floor(Math.random() * (totalMelds + 1)); // 0..totalMelds
+      }
+      currentOpenMeldCount = openMeldCount;
+
+      renderHand(handOutput, hand, groupMelds, {
+        winType: currentWinType,
+        openMeldCount
+      });
       renderFlowers(flowersOutput, hand ? hand.flowers : []);
       updateScoreDisplay();
     }
