@@ -232,10 +232,13 @@
       return;
     }
 
-    // Split melds between open and closed, then flatten within each
-    // Here we treat the first 3 melds as open, remaining melds + pair as closed.
-    const openMelds = handData.melds.slice(0, 3);
-    const closedMelds = handData.melds.slice(3);
+    // Randomly choose how many melds are open vs closed, then flatten within each.
+    // Any closed melds plus the pair are shown under "Closed".
+    const totalMelds = handData.melds.length;
+    const openMeldCount = Math.floor(Math.random() * (totalMelds + 1)); // 0..totalMelds
+
+    const openMelds = handData.melds.slice(0, openMeldCount);
+    const closedMelds = handData.melds.slice(openMeldCount);
 
     const openTiles = [];
     openMelds.forEach((meld) => openTiles.push(...meld.tiles));
